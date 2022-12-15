@@ -41,7 +41,7 @@ void *validating_columns(void* parameters)
     //check for invalid values
     if (row != 0 || column > 8)
         {
-            fprintf(stderr, "INVALID Column at row=%d, column=%d \n", row, column);
+            fprintf(stderr, "INVALID Column at row=%d, column=%d", row, column);
             pthread_exit(NULL);
         }
     //check for values 1-9
@@ -72,7 +72,7 @@ void *validating_rows(void* parameters)
 
     if (column != 0 || row > 8)
         {
-            fprintf(stderr, "INVALID Column at row=%d, column=%d \n", row , column);
+            fprintf(stderr, "INVALID Column at row=%d, column=%d", row , column);
             pthread_exit(NULL);
         }
 
@@ -101,7 +101,7 @@ void *valid_3x3(void* parameters)
     int column = p -> starting_col;
 
     if( row > 6 || column > 6 || row %3 != 0 || column %3 !=0){
-        fprintf(stderr, "INVALID subsection at row=%d, column=%d \n", row, column);
+        fprintf(stderr, "INVALID subsection at row=%d, column=%d", row, column);
         pthread_exit(NULL);
     }
     for(int i = row; i < row + 3; i++){
