@@ -38,17 +38,24 @@ void *validating_columns(void* parameters)
     int row = p -> starting_row;
     int column = p -> starting_col;
 
+    //check for invalid values
+    if (row != 0 || column > 8)
+        {
+            fprintf(stderr, "INVALID Column at row=%d, column=%d \n", row, column);
+            pthread_exit(NULL);
+        }
+    //check for values 1-9
     for(int i = 0; i< 9; i++)
     {
-        int target = sudoku_board[i][column];
-        if (target > 9 || target < 1 || validate[target - 1]==1)
+        int board = sudoku_board[i][column];
+
+        if (board > 9 || board < 1 || validate[board - 1]==1)
         {
-            fprintf(stderr, "INVALID Column at row=%d, column=%d \n", row + 1, i + 1);
             pthread_exit(NULL);
         }
 
         else{
-            validate[target - 1] = 1;
+            validate[board - 1] = 1;
         }
     }
 
@@ -63,16 +70,22 @@ void *validating_rows(void* parameters)
     int row = p -> starting_row;
     int column = p -> starting_col;
 
+    if (column != 0 || row > 8)
+        {
+            fprintf(stderr, "INVALID Column at row=%d, column=%d \n", row , column);
+            pthread_exit(NULL);
+        }
+
     for(int i = 0; i< 9; i++)
     {
-        int target = sudoku_board[row][i];
-        if (target > 9 || target < 1 || validate[target - 1]==1)
+        int board = sudoku_board[row][i];
+
+        if (board > 9 || board < 1 || validate[board - 1]==1)
         {
-            fprintf(stderr, "INVALID Column at row=%d, column=%d \n", row + 1, i + 1);
             pthread_exit(NULL);
         }
         else{
-            validate[target - 1] = 1;
+            validate[board - 1] = 1;
         }
     }
 
@@ -87,17 +100,21 @@ void *valid_3x3(void* parameters)
     int row = p -> starting_row;
     int column = p -> starting_col;
 
+    if( row > 6 || column > 6 || row %3 != 0 || column %3 !=0){
+        fprintf(stderr, "INVALID subsection at row=%d, column=%d \n", row, column);
+        pthread_exit(NULL);
+    }
     for(int i = row; i < row + 3; i++){
         for(int k = column; k<column + 3; k++)
         {
-            int target = sudoku_board[i][k];
-            if (target > 9 || target < 1 || validate[target - 1]==1)
+            int board = sudoku_board[i][k];
+
+            if (board > 9 || board < 1 || validate[board - 1]==1)
             {
-                fprintf(stderr, "INVALID subsection at row=%d, column=%d \n", i + 1, k + 1);
                 pthread_exit(NULL);
             }
             else{
-                validate[target-1] = 1;
+                validate[board-1] = 1;
             }
         }
     }
