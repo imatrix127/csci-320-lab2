@@ -96,7 +96,7 @@ void *validating_rows(void* parameters)
 }
 void *valid_3x3(void* parameters)
 {
-    int square = ((param_struct*) parameters);
+    param_struct *square = (param_struct*) parameters;
 
     int validate[ROW_SIZE] = {0};
 
@@ -105,7 +105,7 @@ void *valid_3x3(void* parameters)
     for(int i = 0; i< 9/3; i++)
     {
         for(int j = 0; j < 9/3; j++){
-            validate[sudoku_board[square -> col + i][square -> row + j]-1]+=1;
+            validate[sudoku_board[square->col+i][square->row+j]-1]+=1;
         }
 
 
@@ -119,7 +119,7 @@ void *valid_3x3(void* parameters)
     }
 
 
-    worker_validation[square->col + square -> row/3] = 1;
+    worker_validation[square->col + square->row/3] = 1;
     pthread_exit(NULL);
 
 }
@@ -177,7 +177,7 @@ int is_board_valid(){
 		}
 	}
 
-    void *errors[NUM_OF_THREADS];
+
     for(int i = 0; i< NUM_OF_THREADS; i++)
     {
         free(param[i]);
