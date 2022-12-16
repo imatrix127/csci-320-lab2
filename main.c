@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include "lab2.h"
 
+
+
 int main(int argc, char *argv[]){
     
-    
+    int** sudoku_board;
     if (argc < 2){
         fprintf(stderr,"SYNOPSIS: %s <file name>\n",argv[0]);
         return 1;
@@ -16,13 +18,13 @@ int main(int argc, char *argv[]){
         fprintf(stderr,"No board available to validate. File %s is empty or unreadable.\n",argv[1]);
         return 2;
     }
-    
+
     if (is_board_valid()){
         printf("The board is valid.\n");
     } else {
         printf("The board is not valid.\n");
     }
-    
+    printf("freeing board\n");
     for(int row = 0; row < ROW_SIZE; row++){
         free(sudoku_board[row]);
     }
