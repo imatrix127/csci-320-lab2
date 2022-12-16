@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "lab2.h"
 
+
 int** sudoku_board;
 int* worker_validation;
 
@@ -44,100 +45,81 @@ int** read_board_from_file(char* filename){
 
 void *validating_columns(void* parameters)
 {
-    param_struct *p = (param_struct*) parameters;
+    int col = ((param_struct*) parameters)->col;
 
     int validate[COL_SIZE] = {0};
-    int row = p -> starting_row;
-    int column = p -> starting_col;
 
-    //check for invalid values
-    if (row != 0 || column > 8)
-        {
-            fprintf(stderr, "INVALID Column at row=%d, column=%d", row, column);
-            pthread_exit(NULL);
-        }
+
     //check for values 1-9
     for(int i = 0; i< 9; i++)
     {
 
-        int board = sudoku_board[i][column];
+         validate[sudoku_board[col][i]-1]+=1;
 
-        if (board > 9 || board < 1 || validate[board - 1]==1)
-        {
 
+    }
+    for (int i = 0; i < 9; i +=1){
+        if(validate[i] == 0){
             pthread_exit(NULL);
-        }
-
-        else{
-
-            validate[board - 1] = 1;
         }
     }
 
-    worker_validation[ 18 + column] = 1;
+
+    worker_validation[col] = 1;
     pthread_exit(NULL);
 }
 void *validating_rows(void* parameters)
 {
-    param_struct *p = (param_struct*) parameters;
+    int row = ((param_struct*) parameters)->row;
 
     int validate[ROW_SIZE] = {0};
-    int row = p -> starting_row;
-    int column = p -> starting_col;
 
-    if (column != 0 || row > 8)
-        {
-            fprintf(stderr, "INVALID Column at row=%d, column=%d", row , column);
-            pthread_exit(NULL);
-        }
 
+    //check for values 1-9
     for(int i = 0; i< 9; i++)
     {
-        int board = sudoku_board[row][i];
 
-        if (board > 9 || board < 1 || validate[board - 1]==1)
-        {
+         validate[sudoku_board[i][row]-1]+=1;
+
+
+    }
+    for (int i = 0; i < 9; i +=1){
+        if(validate[i] == 0){
             pthread_exit(NULL);
-        }
-        else{
-            validate[board - 1] = 1;
         }
     }
 
-    worker_validation[9 + row] = 1;
+
+    worker_validation[row] = 1;
     pthread_exit(NULL);
 
 }
 void *valid_3x3(void* parameters)
 {
-    param_struct *p = (param_struct*) parameters;
+    int square = ((param_struct*) parameters);
+
     int validate[ROW_SIZE] = {0};
-    int row = p -> starting_row;
-    int col = p -> starting_col;
 
-    if( row > 6 || col > 6 || row %3 != 0 || col %3 !=0){
-        fprintf(stderr, "INVALID subsection at row=%d, column=%d", row, col);
-        pthread_exit(NULL);
+
+    //check for values 1-9
+    for(int i = 0; i< 9/3; i++)
+    {
+        for(int j = 0; j < 9/3; j++){
+            validate[sudoku_board[square -> col + i][square -> row + j]-1]+=1;
+        }
+
+
+
+
     }
-
-    for(int i = row; i < row + 3; i++){
-        //printf("row=%d",row);
-        for(int k = col; k < col + 3; k++){
-            printf("column=%d",col);
-            int board = sudoku_board[i][k];
-            printf("board made...\n");
-
-            if (board > 9 || board < 1 || validate[board - 1]==1)
-            {
-
-                pthread_exit(NULL);
-            }
-            else{
-                validate[board-1] = 1;
-            }
+    for (int i = 0; i < 9; i +=1){
+        if(validate[i] == 0){
+            pthread_exit(NULL);
         }
     }
-    worker_validation[row + col / 3] = 1;
+
+
+    worker_validation[square->col + square -> row/3] = 1;
     pthread_exit(NULL);
 
 }
@@ -145,51 +127,60 @@ void *valid_3x3(void* parameters)
 
 
 int is_board_valid(){
-    pthread_t* tid;  /* the thread identifiers */
+    pthread_t* tid[NUM_OF_THREADS];  /* the thread identifiers */
     pthread_attr_t attr;
     param_struct* parameter;
     // replace this comment with your code
-
+    if (pthread_attr_init(&attr)) {
+		perror("pthread_attr_init()");
+		exit(EXIT_FAILURE);
+	}
     int threadCounter = 0;
     worker_validation = (int*)malloc(sizeof(int)*NUM_OF_THREADS);
 
-    tid = (pthread_t*)malloc(sizeof(int)*NUM_OF_THREADS);
-
-    param_struct* param = (param_struct*)malloc(sizeof(param_struct)*NUM_OF_THREADS);
-    for(int i = 0; i < ROW_SIZE; i++)
-    {
-        for(int j = 0; j < COL_SIZE; j++)
-        {
-            if(i%3 == 0 && j%3 == 0){
-                printf("3x3 validating ... \n");
-                //param_struct *worker3x3 = (param_struct*) malloc(sizeof(param_struct));
-                param[threadCounter].starting_row = i;
-                param[threadCounter].starting_col = j;
-                pthread_create(&tid[threadCounter], NULL, valid_3x3, param);
-
-            }
-            if(i==0){
-                //param_struct *workerColumn = (param_struct*) malloc(sizeof(param_struct));
-                param[threadCounter].starting_row = i;
-                param[threadCounter].starting_col = j;
-                pthread_create(&tid[threadCounter], NULL,validating_columns,param);
-
-            }
-            if(j==0){
-                //param_struct *workerRow = (param_struct*) malloc(sizeof(param_struct));
-                param[threadCounter].starting_row = i;
-                param[threadCounter].starting_col = j;
-                pthread_create(&tid[threadCounter], NULL, validating_rows, param);
-
-            }
-            threadCounter++;
 
 
-        }free(param);
-    }
+    param_struct* param[NUM_OF_THREADS];
 
+	for (int i = 0; i < 9; i += 1) {
+		param[threadCounter] = (param_struct*) malloc(sizeof(param_struct));
+		param[threadCounter]->col = 0;
+		param[threadCounter]->row = i;
+		if (pthread_create(&tid[threadCounter], &attr, validating_rows, param[threadCounter])) {
+			perror("pthread_create()");
+			exit(EXIT_FAILURE);
+		}
+		threadCounter += 1;
+	}
+
+	for (int i = 0; i < 9; i += 1) {
+		param[threadCounter] = (param_struct*) malloc(sizeof(param_struct));
+		param[threadCounter]->col = i;
+		param[threadCounter]->row = 0;
+		if (pthread_create(&tid[threadCounter], &attr, validating_columns, param[threadCounter])) {
+			perror("pthread_create()");
+			exit(EXIT_FAILURE);
+		}
+		threadCounter += 1;
+	}
+
+	for (int i = 0; i < 9; i += 3) {
+		for (int j = 0; j < 9; j += 3) {
+			param[threadCounter] = (param_struct*) malloc(sizeof(param_struct));
+			param[threadCounter]->col = i;
+			param[threadCounter]->row = j;
+			if (pthread_create(&tid[threadCounter], &attr, valid_3x3, param[threadCounter])) {
+				perror("pthread_create()");
+				exit(EXIT_FAILURE);
+			}
+			threadCounter += 1;
+		}
+	}
+
+    void *errors[NUM_OF_THREADS];
     for(int i = 0; i< NUM_OF_THREADS; i++)
     {
+        free(param[i]);
         pthread_join(tid[i], NULL);
     }
 

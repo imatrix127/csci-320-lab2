@@ -4,7 +4,7 @@ validate_sudoku: $(OBJECTS)
 	gcc -o $@ $(OBJECTS) 
 
 lab2.o:lab2.c
-	gcc -c lab2.c
+	gcc -c -pthread lab2.c
 
 main.o: 
 	gcc -c main.c

@@ -13,6 +13,8 @@ typedef struct {
     int starting_col;
     int ending_row;
     int ending_col;
+    int row;
+    int col;
 } param_struct;
 
 //int** sudoku_board; // this board is shared by the threads
