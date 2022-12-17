@@ -15,8 +15,14 @@ typedef struct {
     int ending_col;
     int row;
     int col;
-} param_struct;
 
+} param_struct;
+typedef struct{
+
+    int position;
+    int number;
+
+} Error;
 //int** sudoku_board; // this board is shared by the threads
 //int* worker_validation; // this will hold the result from each thread
 

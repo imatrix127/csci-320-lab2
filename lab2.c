@@ -9,6 +9,11 @@
 int* worker_validation;
 int** sudoku_board;
 
+int validate_3x3[ROW_SIZE] = {0};
+int validate_row[ROW_SIZE] = {0};
+int validate_column[COL_SIZE] = {0};
+
+
 int** read_board_from_file(char* filename){
     FILE *fp = NULL;
     fp = fopen(filename,"r");
@@ -48,20 +53,20 @@ void *validating_columns(void* parameters)
 {
     int col = ((param_struct*) parameters)->col;
 
-    int validate[COL_SIZE] = {0};
-
-
     //check for values 1-9
     for(int i = 0; i< 9; i++)
     {
 
-         validate[sudoku_board[col][i]-1]+=1;
+         validate_column[sudoku_board[col][i]-1]+=1;
 
 
     }
     for (int i = 0; i < 9; i +=1){
-        if(validate[i] == 0){
-            pthread_exit(NULL);
+        if(validate_column[i] == 0){
+            Error *error = (Error*) malloc(sizeof(Error));
+			error->position = col;
+			error->number = i+1;
+			pthread_exit(error);
         }
     }
 
@@ -73,20 +78,20 @@ void *validating_rows(void* parameters)
 {
     int row = ((param_struct*) parameters)->row;
 
-    int validate[ROW_SIZE] = {0};
-
-
     //check for values 1-9
     for(int i = 0; i< 9; i++)
     {
 
-         validate[sudoku_board[i][row]-1]+=1;
+         validate_row[sudoku_board[i][row]-1]+=1;
 
 
     }
     for (int i = 0; i < 9; i +=1){
-        if(validate[i] == 0){
-            pthread_exit(NULL);
+        if(validate_row[i] == 0){
+            Error *error = (Error*) malloc(sizeof(Error));
+            error->position = row;
+			error->number = i+1;
+			pthread_exit(error);
         }
     }
 
@@ -99,23 +104,20 @@ void *valid_3x3(void* parameters)
 {
     param_struct *square = (param_struct*) parameters;
 
-    int validate[ROW_SIZE] = {0};
-
-
     //check for values 1-9
     for(int i = 0; i< 9/3; i++)
     {
         for(int j = 0; j < 9/3; j++){
-            validate[sudoku_board[square->col+i][square->row+j]-1]+=1;
+            validate_3x3[sudoku_board[square->col+i][square->row+j]-1]+=1;
         }
-
-
-
 
     }
     for (int i = 0; i < 9; i +=1){
-        if(validate[i] == 0){
-            pthread_exit(NULL);
+        if(validate_3x3[i] == 0){
+            Error *error = (Error*) malloc(sizeof(Error));
+            error->position = square->col + square->row/3;
+			error->number = i+1;
+            pthread_exit(error);
         }
     }
 
@@ -147,11 +149,12 @@ int is_board_valid(){
 		param[threadCounter] = (param_struct*) malloc(sizeof(param_struct));
 		param[threadCounter]->col = 0;
 		param[threadCounter]->row = i;
-		if (pthread_create(&tid[threadCounter], &attr, validating_rows, &param[threadCounter]) && i == 100) {
-            threadCounter += 1;
+		if (pthread_create(&tid[threadCounter], &attr, validating_rows, &param[threadCounter])) {
+
 			perror("pthread_create()");
 			exit(EXIT_FAILURE);
 		}
+		threadCounter += 1;
 
 	}
 
@@ -160,11 +163,11 @@ int is_board_valid(){
 		param[threadCounter]->col = i;
 		param[threadCounter]->row = 0;
 		if (pthread_create(&tid[threadCounter], &attr, validating_columns, &param[threadCounter])) {
-            threadCounter += 1;
+
 			perror("pthread_create()");
 			exit(EXIT_FAILURE);
 		}
-
+        threadCounter += 1;
 	}
 
 	for (int i = 0; i < 9; i += 3) {
@@ -172,21 +175,30 @@ int is_board_valid(){
 			param[threadCounter] = (param_struct*) malloc(sizeof(param_struct));
 			param[threadCounter]->col = i;
 			param[threadCounter]->row = j;
-			if (pthread_create(&tid[threadCounter], &attr, valid_3x3, &param[threadCounter]) && i == 100) {
-                threadCounter += 1;
+			if (pthread_create(&tid[threadCounter], &attr, valid_3x3, &param[threadCounter])) {
+
 				perror("pthread_create()");
 				exit(EXIT_FAILURE);
 			}
+			threadCounter += 1;
 
 		}
 	}
 
-
+    void *errors[9*3];
     for(int i = 0; i< NUM_OF_THREADS; i++)
     {
         free(param[i]);
-        pthread_join(tid[i], NULL);
+        if (pthread_join(tid[i], &(errors[i]))) {
+			perror("pthread_join()");
+			exit(EXIT_FAILURE);
+		}
     }
+
+    if (pthread_attr_destroy(&attr)) {
+		perror("pthread_attr_destroy()");
+		exit(EXIT_FAILURE);
+	}
 
     for (int i = 0; i<NUM_OF_THREADS; i++)
     {
@@ -195,6 +207,37 @@ int is_board_valid(){
         }
 
     }
+
+    int errorCount = 0;
+	for (int i = 0; i < 9; i += 1) {
+		if (!validate_row[i]) {
+			if (errors[i] != NULL)
+				printf("Row number %d does not contain '%d'\n", ((Error**) errors)[i]->position, ((Error**) errors)[i]->number);
+			errorCount += 1;
+		}
+
+		free(errors[i]);
+		if (!validate_column[i]) {
+			if (errors[i+9] != NULL)
+				printf("Column number %d does not contain '%d'\n", ((Error**) errors)[i+9]->position, ((Error**) errors)[i+9]->number);
+			errorCount += 1;
+		}
+
+		free(errors[i+9]);
+		if (!validate_3x3[i]) {
+			if (errors[i+9*2] != NULL)
+				printf("Block number %d does not contain '%d'\n", ((Error**) errors)[i+9*2]->position, ((Error**) errors)[i+9*2]->number);
+			errorCount += 1;
+		}
+		free(errors[i+9*2]);
+	}
+	if (errorCount) {
+		printf("FALSE\n");
+		exit(EXIT_SUCCESS);
+	}
+
+	printf("TRUE\n");
+	exit(EXIT_SUCCESS);
     free(worker_validation);
     free(tid);
     return 1;
