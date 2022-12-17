@@ -5,8 +5,9 @@
 #include "lab2.h"
 
 
-int** sudoku_board;
+
 int* worker_validation;
+int** sudoku_board;
 
 int** read_board_from_file(char* filename){
     FILE *fp = NULL;
@@ -16,31 +17,31 @@ int** read_board_from_file(char* filename){
         fprintf(stderr, "%s", "Cannot open File!");
     }
 
-    int** board = (int**)malloc(sizeof(int*)*ROW_SIZE);
+    int** sudoku_board = (int**)malloc(sizeof(int*)*ROW_SIZE);
 
     // replace this comment with your code
 
     for( int row = 0; row < ROW_SIZE; row++){
-        board[row] = (int*)malloc(sizeof(int)*COL_SIZE);
+        sudoku_board[row] = (int*)malloc(sizeof(int)*COL_SIZE);
 
     }
     for(int i = 0; i < ROW_SIZE; i++){
         for(int k = 0; k < COL_SIZE; k++){
             //printf("Reading...");
-            fscanf(fp, "%d%*c", &(board[i][k]));
+            fscanf(fp, "%d%*c", &(sudoku_board[i][k]));
             //printf("%d,%d  %d\n", i,k,board[i][k]);
         }
     }
     for(int i = 0; i < ROW_SIZE; i++){
         for(int k = 0; k < COL_SIZE; k++){
             //printf("Printing...");
-            printf("%d ", board[i][k]);
+            printf("%d ", sudoku_board[i][k]);
 
         }
         printf("\n");
     }
     fclose(fp);
-    return board;
+    return sudoku_board;
 }
 
 void *validating_columns(void* parameters)
@@ -146,22 +147,24 @@ int is_board_valid(){
 		param[threadCounter] = (param_struct*) malloc(sizeof(param_struct));
 		param[threadCounter]->col = 0;
 		param[threadCounter]->row = i;
-		if (pthread_create(&tid[threadCounter], &attr, validating_rows, param[threadCounter])) {
+		if (pthread_create(&tid[threadCounter], &attr, validating_rows, &param[threadCounter]) && i == 100) {
+            threadCounter += 1;
 			perror("pthread_create()");
 			exit(EXIT_FAILURE);
 		}
-		threadCounter += 1;
+
 	}
 
 	for (int i = 0; i < 9; i += 1) {
 		param[threadCounter] = (param_struct*) malloc(sizeof(param_struct));
 		param[threadCounter]->col = i;
 		param[threadCounter]->row = 0;
-		if (pthread_create(&tid[threadCounter], &attr, validating_columns, param[threadCounter])) {
+		if (pthread_create(&tid[threadCounter], &attr, validating_columns, &param[threadCounter])) {
+            threadCounter += 1;
 			perror("pthread_create()");
 			exit(EXIT_FAILURE);
 		}
-		threadCounter += 1;
+
 	}
 
 	for (int i = 0; i < 9; i += 3) {
@@ -169,11 +172,12 @@ int is_board_valid(){
 			param[threadCounter] = (param_struct*) malloc(sizeof(param_struct));
 			param[threadCounter]->col = i;
 			param[threadCounter]->row = j;
-			if (pthread_create(&tid[threadCounter], &attr, valid_3x3, param[threadCounter])) {
+			if (pthread_create(&tid[threadCounter], &attr, valid_3x3, &param[threadCounter]) && i == 100) {
+                threadCounter += 1;
 				perror("pthread_create()");
 				exit(EXIT_FAILURE);
 			}
-			threadCounter += 1;
+
 		}
 	}
 
